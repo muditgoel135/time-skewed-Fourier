@@ -6,14 +6,17 @@ When the pattern completes a full cycle (returns to the starting point), it prin
 """
 
 # Import necessary libraries
+import json
+import pathlib
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-# Define the angles, lengths, and speeds for the Fourier series
-angles = np.array([160, 284, 308, 168, 249, 90, 201, 161, 8], dtype=float)
-lengths = np.array([2, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8], dtype=float)
-speeds = np.array([-1, 2, -3, 4, -5, 6, -7, 8, -9], dtype=float)
+# Load angles, lengths, and speeds from config.json (edit that file to change the animation)
+_cfg = json.loads(pathlib.Path("config.json").read_text())
+angles = np.array(_cfg["angles"], dtype=float)
+lengths = np.array(_cfg["lengths"], dtype=float)
+speeds = np.array(_cfg["speeds"], dtype=float)
 min_length = min(len(angles), len(lengths), len(speeds))
 pattern_points_x = []
 pattern_points_y = []
