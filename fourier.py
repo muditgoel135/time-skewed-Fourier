@@ -2,7 +2,6 @@
 This code creates an animated visualization of a Fourier series using matplotlib.
 It defines a set of angles, lengths, and speeds for the Fourier series and computes the x and y coordinates based on these parameters.
 The animation updates the angles over time, creating a dynamic pattern. The final point of the pattern is marked with a red 'x', and the trail of points is shown in black.
-When the pattern completes a full cycle (returns to the starting point), it prints the coordinates of the pattern and saves the figure before exiting.
 """
 
 # Import necessary libraries
@@ -91,14 +90,10 @@ def update(frame):
         and pattern_points_y[-1] == pattern_points_y[0]
         and len(pattern_points_x) > 1
     ):
-        print(
-            [
-                (pattern_points_x, pattern_points_y)
-                for i in range(len(pattern_points_x))
-            ],
-            end="\n",
-        )
-        plt.savefig()
+        with open("output/pattern_points.txt", "w") as f:
+            for x, y in zip(pattern_points_x, pattern_points_y):
+                f.write(f"{x}, {y}\n")
+        plt.savefig("output/Ending_Pattern.png")
         exit()
 
     return line, final_dot
