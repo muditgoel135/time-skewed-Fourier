@@ -1,28 +1,28 @@
 # time-skewed-Fourier
 
-An animated visualization of a Fourier series built with Python and matplotlib. A chain of rotating arms traces a pattern over time; when the pattern closes into a full cycle the result is saved to disk.
+An animated Fourier-style drawing tool built with Python and matplotlib. A chain of rotating arms traces a pattern over time; when the endpoint returns to its starting position, the completed pattern and its coordinates are saved to disk.
 
-## How it works
+## How It Works
 
-Each "arm" in the chain has three properties:
+Each arm in the chain is described by one value from each array in `config.json`:
 
-| Property  | Meaning                                                    |
-| --------- | ---------------------------------------------------------- |
-| `angles`  | Starting angle of the arm in degrees                       |
-| `lengths` | Length of the arm                                          |
-| `speeds`  | Degrees the arm rotates per frame (negative = clockwise)   |
+| Property  | Meaning                                                  |
+| --------- | -------------------------------------------------------- |
+| `angles`  | Starting angle of the arm, in degrees                    |
+| `lengths` | Length of the arm                                        |
+| `speeds`  | Degrees the arm rotates per frame; negative is clockwise |
 
-Every frame, each arm's angle is incremented by its speed, the tip of the chain traces a point, and the accumulated trail is drawn in black. When the trail's current endpoint returns to its starting point the animation stops, saves the pattern image, and exits.
+On each animation frame, the script advances every arm by its speed, draws the connected arm chain in orange, and adds the chain endpoint to the black trail. When the endpoint reaches the trail's starting point again, the animation stops and writes the output files.
 
 ## Setup
 
-**Requirements:** Python 3.8+
+Requires Python 3.8 or newer.
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Create the output directory before running:
+Create the output directory before running the animation:
 
 ```bash
 mkdir output
@@ -30,47 +30,58 @@ mkdir output
 
 ## Running
 
+Run the animation with the current configuration:
+
 ```bash
 python fourier.py
 ```
 
+Generate a new random configuration:
+
+```bash
+python random_val.py
+```
+
+`random_val.py` overwrites `config.json`, so save any configuration you want to keep before running it.
+
 ## Configuration
 
-Edit `config.json` to change the animation — no Python knowledge needed. Each index across the three arrays describes one arm:
+Edit `config.json` to change the animation. Each matching index across the three arrays describes one arm:
 
 ```json
 {
-  "angles":  [315, 160, 284, ...],
-  "lengths": [  1,   2, 1.1, ...],
-  "speeds":  [  0,  -1,   2, ...]
+  "angles":  [315, 160, 284],
+  "lengths": [  1,   2, 1.1],
+  "speeds":  [  0,  -1,   2]
 }
 ```
 
-- **Add an arm** — append one value to each of the three arrays.
-- **Remove an arm** — delete the last value from each array.
-- Arrays can have different lengths; the shortest one determines how many arms are used.
+- **Add an arm:** append one value to each array.
+- **Remove an arm:** delete one matching value from each array.
+- If the arrays have different lengths, the shortest array determines how many arms are used.
 
 ### Tips
 
-- A `speed` of `0` keeps an arm stationary (acts as a fixed offset).
-- Larger `lengths` make that arm dominate the shape.
-- Mixing positive and negative speeds produces more complex, asymmetric patterns.
-- All speeds that share a common factor will produce a closed loop sooner.
+- A `speed` of `0` keeps an arm stationary, acting as a fixed offset.
+- Larger `lengths` make an arm contribute more strongly to the shape.
+- Positive and negative speeds rotate in opposite directions and can create more complex patterns.
+- Speeds with a shared factor usually close the loop sooner.
 
 ## Output
 
-When the pattern completes a full cycle two files are written to the `output/` directory:
+When the pattern completes a full cycle, two files are written to `output/`:
 
-| File                           | Contents                                          |
-| ------------------------------ | ------------------------------------------------- |
-| `output/Ending_Pattern.png`    | Screenshot of the completed pattern               |
-| `output/pattern_points.txt`    | All trail coordinates, one `x, y` pair per line   |
+| File                        | Contents                                      |
+| --------------------------- | --------------------------------------------- |
+| `output/Ending_Pattern.png` | Screenshot of the completed pattern           |
+| `output/pattern_points.txt` | Trail coordinates, one `x, y` pair per line   |
 
-## Project structure
+## Project Structure
 
 ```text
-fourier.py        # Animation script
+fourier.py        # Runs the animation and saves completed patterns
+random_val.py     # Generates a random config.json file
 config.json       # Editable arm configuration
 requirements.txt  # Python dependencies
-output/           # Generated output (create before running)
+output/           # Generated output files
 ```

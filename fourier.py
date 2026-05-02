@@ -1,17 +1,12 @@
-"""
-This code creates an animated visualization of a Fourier series using matplotlib.
-It defines a set of angles, lengths, and speeds for the Fourier series and computes the x and y coordinates based on these parameters.
-The animation updates the angles over time, creating a dynamic pattern. The final point of the pattern is marked with a red 'x', and the trail of points is shown in black.
-"""
+"""Animate a chain of rotating arms and save the completed traced pattern."""
 
-# Import necessary libraries
 import json
 import pathlib
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-# Load angles, lengths, and speeds from config.json (edit that file to change the animation)
+# Load the arm configuration. Matching indexes across the arrays describe one arm.
 _cfg = json.loads(pathlib.Path("config.json").read_text())
 angles = np.array(_cfg["angles"], dtype=float)
 lengths = np.array(_cfg["lengths"], dtype=float)
@@ -21,24 +16,27 @@ pattern_points_x = []
 pattern_points_y = []
 
 
-# Set up the figure and axes for the animation
+# Draw the traced endpoint, the arm chain, and the current endpoint marker.
 fig, ax = plt.subplots()
+(trail_line,) = ax.plot([], [], marker="o", color="black", markersize=1)
 (line,) = ax.plot([], [], marker="o", color="orange", markersize=3)
 (final_dot,) = ax.plot([], [], "rx")
-(trail_line,) = ax.plot([], [], marker="o", color="black", markersize=1)
 
-# Set the limits and aspect ratio of the plot
-ax.set_xlim(-10, 10)
-ax.set_ylim(-10, 10)
+ax.set_xlim(-30, 30)
+ax.set_ylim(-30, 30)
 ax.set_aspect("equal")
 ax.grid()
+ax.spines["left"].set_position("zero")
+ax.spines["bottom"].set_position("zero")
+ax.spines["right"].set_visible(False)
+ax.spines["top"].set_visible(False)
 
 
 def compute_points():
     """
-    Compute the x and y coordinates of the points based on the current angles, lengths, and speeds
+    Return the joint coordinates for the current arm chain.
 
-    :return: Two lists containing the x and y coordinates of the points
+    The first point is the origin; each following point is the end of one arm.
     """
 
     X_index = [0] + [
@@ -56,35 +54,28 @@ def compute_points():
 
 def update(frame):
     """
-    Update the angles and compute the new points for the animation
+    Advance the animation by one frame and update the plotted artists.
 
-    :param frame: The current frame number (not used in this function)
-    :return: Updated line and final dot for the animation
+    The frame number is supplied by matplotlib but is not needed here.
     """
 
-    # Update the angles based on the speeds and ensure they stay within 0-360 degrees
     global angles
 
-    # Update angles and wrap them around using modulo 360
     for i in range(min_length):
         angles[i] += speeds[i]
         angles[i] = angles[i] % 360
 
-    # Compute the new points based on the updated angles
     X_index, Y_index = compute_points()
 
-    # Update the line and final dot with the new coordinates
-    line.set_data(X_index, Y_index)
-    final_dot.set_data([X_index[-1]], [Y_index[-1]])
-
-    # Append the final point to the pattern points and update the trail line
     pattern_points_x.append(X_index[-1])
     pattern_points_y.append(Y_index[-1])
 
-    # Update the trail line with the new pattern points
     trail_line.set_data(pattern_points_x, pattern_points_y)
 
-    # Check if the pattern has completed a full cycle (returns to the starting point)
+    line.set_data(X_index, Y_index)
+    final_dot.set_data([X_index[-1]], [Y_index[-1]])
+
+    # Save once the endpoint returns to its starting point.
     if (
         pattern_points_x[-1] == pattern_points_x[0]
         and pattern_points_y[-1] == pattern_points_y[0]
@@ -99,6 +90,5 @@ def update(frame):
     return line, final_dot
 
 
-# Create the animation
-ani = animation.FuncAnimation(fig, update, interval=50)
+ani = animation.FuncAnimation(fig, update, interval=0.50)
 plt.show()
