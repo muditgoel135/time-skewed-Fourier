@@ -28,6 +28,14 @@ Create the output directory before running the animation:
 mkdir output
 ```
 
+`config.json` is intentionally **not** committed to this GitHub repository. Create it locally by running:
+
+```bash
+python random_val.py
+```
+
+This command creates `config.json` with the required structure and example random values.
+
 ## Running
 
 Run the animation with the current configuration:
@@ -36,7 +44,7 @@ Run the animation with the current configuration:
 python fourier.py
 ```
 
-Generate a new random configuration:
+Generate a new random configuration (or create `config.json` if it does not exist):
 
 ```bash
 python random_val.py
@@ -80,8 +88,8 @@ When the pattern completes a full cycle, two files are written to `output/`:
 
 ```text
 fourier.py        # Runs the animation and saves completed patterns
-random_val.py     # Generates a random config.json file
-config.json       # Editable arm configuration
+random_val.py     # Generates a random local config.json file
+config.json       # Local editable arm configuration (not in the repo)
 requirements.txt  # Python dependencies
 output/           # Generated output files
 ```
