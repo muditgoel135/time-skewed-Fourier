@@ -14,6 +14,8 @@ speeds = np.array(_cfg["speeds"], dtype=float)
 min_length = min(len(angles), len(lengths), len(speeds))
 pattern_points_x = []
 pattern_points_y = []
+START_TOLERANCE = 1e-2
+MIN_FRAMES_BEFORE_CLOSE_CHECK = 10
 
 
 # Draw the traced endpoint, the arm chain, and the current endpoint marker.
@@ -75,12 +77,17 @@ def update(frame):
     line.set_data(X_index, Y_index)
     final_dot.set_data([X_index[-1]], [Y_index[-1]])
 
-    # Save once the endpoint returns to its starting point.
-    if (
-        pattern_points_x[-1] == pattern_points_x[0]
-        and pattern_points_y[-1] == pattern_points_y[0]
-        and len(pattern_points_x) > 1
-    ):
+    # Save once the endpoint returns close to its starting point.
+    # Exact float equality is rare, so use a tolerance-based distance check.
+    if len(pattern_points_x) > MIN_FRAMES_BEFORE_CLOSE_CHECK:
+        dist_to_start = np.hypot(
+            pattern_points_x[-1] - pattern_points_x[0],
+            pattern_points_y[-1] - pattern_points_y[0],
+        )
+    else:
+        dist_to_start = np.inf
+
+    if dist_to_start <= START_TOLERANCE:
         with open("output/pattern_points.txt", "w") as f:
             for x, y in zip(pattern_points_x, pattern_points_y):
                 f.write(f"{x}, {y}\n")
