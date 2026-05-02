@@ -9,6 +9,7 @@ import matplotlib.animation as animation
 # Load the arm configuration. Matching indexes across the arrays describe one arm.
 _cfg = json.loads(pathlib.Path("config.json").read_text())
 angles = np.array(_cfg["angles"], dtype=float)
+initial_angles = angles.copy()
 lengths = np.array(_cfg["lengths"], dtype=float)
 speeds = np.array(_cfg["speeds"], dtype=float)
 min_length = min(len(angles), len(lengths), len(speeds))
@@ -16,6 +17,7 @@ pattern_points_x = []
 pattern_points_y = []
 START_TOLERANCE = 1e-2
 MIN_FRAMES_BEFORE_CLOSE_CHECK = 10
+ANGLE_TOLERANCE_DEGREES = 1e-3
 
 
 # Draw the traced endpoint, the arm chain, and the current endpoint marker.
@@ -87,7 +89,12 @@ def update(frame):
     else:
         dist_to_start = np.inf
 
-    if dist_to_start <= START_TOLERANCE:
+    angles_back_at_start = np.all(
+        np.abs(((angles[:min_length] - initial_angles[:min_length] + 180) % 360) - 180)
+        <= ANGLE_TOLERANCE_DEGREES
+    )
+
+    if dist_to_start <= START_TOLERANCE and angles_back_at_start:
         with open("output/pattern_points.txt", "w") as f:
             for x, y in zip(pattern_points_x, pattern_points_y):
                 f.write(f"{x}, {y}\n")
