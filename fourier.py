@@ -14,8 +14,39 @@ speeds = np.array(_cfg["speeds"], dtype=float)
 min_length = min(len(angles), len(lengths), len(speeds))
 pattern_points_x = []
 pattern_points_y = []
-START_TOLERANCE = 1e-2
-MIN_FRAMES_BEFORE_CLOSE_CHECK = 10
+START_TOLERANCE = float(_cfg.get("start_tolerance", 1e-2))
+DEFAULT_CLOSE_CHECK_MIN_SAMPLES = 1
+CONFIG_CLOSE_CHECK_MIN_SAMPLES = max(
+    1,
+    int(_cfg.get("close_check_min_samples", DEFAULT_CLOSE_CHECK_MIN_SAMPLES)),
+)
+
+
+def compute_integer_speed_period(values):
+    """Return the frame period for integer degree-per-frame speeds, if known."""
+
+    rounded_speeds = np.rint(values).astype(int)
+    if not np.allclose(values, rounded_speeds):
+        return None
+
+    period = 1
+    for speed in rounded_speeds:
+        normalized_speed = abs(speed) % 360
+        if normalized_speed == 0:
+            arm_period = 1
+        else:
+            arm_period = 360 // np.gcd(360, normalized_speed)
+        period = np.lcm(period, arm_period)
+
+    return int(period)
+
+
+INTEGER_SPEED_PERIOD = compute_integer_speed_period(speeds)
+CLOSE_CHECK_MIN_SAMPLES = (
+    INTEGER_SPEED_PERIOD
+    if INTEGER_SPEED_PERIOD is not None
+    else CONFIG_CLOSE_CHECK_MIN_SAMPLES
+)
 
 
 # Draw the traced endpoint, the arm chain, and the current endpoint marker.
@@ -54,6 +85,11 @@ def compute_points():
     return X_index, Y_index
 
 
+initial_X_index, initial_Y_index = compute_points()
+pattern_points_x.append(initial_X_index[-1])
+pattern_points_y.append(initial_Y_index[-1])
+
+
 def update(frame):
     """
     Advance the animation by one frame and update the plotted artists.
@@ -79,7 +115,10 @@ def update(frame):
 
     # Save once the endpoint returns close to its starting point.
     # Exact float equality is rare, so use a tolerance-based distance check.
-    if len(pattern_points_x) > MIN_FRAMES_BEFORE_CLOSE_CHECK:
+    # Skip only the seeded starting sample by default; if the configured speeds
+    # have a known integer period, wait for that period instead of an arbitrary
+    # frame threshold.
+    if len(pattern_points_x) > CLOSE_CHECK_MIN_SAMPLES:
         dist_to_start = np.hypot(
             pattern_points_x[-1] - pattern_points_x[0],
             pattern_points_y[-1] - pattern_points_y[0],

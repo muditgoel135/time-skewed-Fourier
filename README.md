@@ -67,6 +67,12 @@ Edit `config.json` to change the animation. Each matching index across the three
 - **Add an arm:** append one value to each array.
 - **Remove an arm:** delete one matching value from each array.
 - If the arrays have different lengths, the shortest array determines how many arms are used.
+- Optional `start_tolerance` controls how close the endpoint must be to the
+  starting point before the pattern is considered closed; it defaults to `1e-2`.
+- Optional `close_check_min_samples` controls how many traced samples to skip
+  before closure checks begin for non-integer speeds; it defaults to `1`, which
+  skips only the initial seeded endpoint sample. For integer speeds, the script
+  computes the exact period and waits for that period instead.
 
 ### Tips
 
