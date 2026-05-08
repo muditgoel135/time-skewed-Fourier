@@ -41,15 +41,15 @@ def compute_points():
     The first point is the origin; each following point is the end of one arm.
     """
 
-    X_index = [0] + [
-        sum([lengths[i] * np.cos(np.radians(angles[i] % 360)) for i in range(j + 1)])
-        for j in range(min_length)
-    ]
+    active_angles = angles[:min_length]
+    active_lengths = lengths[:min_length]
 
-    Y_index = [0] + [
-        sum([lengths[i] * np.sin(np.radians(angles[i] % 360)) for i in range(j + 1)])
-        for j in range(min_length)
-    ]
+    theta = np.radians(active_angles % 360)
+    dx = active_lengths * np.cos(theta)
+    dy = active_lengths * np.sin(theta)
+
+    X_index = np.concatenate(([0.0], np.cumsum(dx)))
+    Y_index = np.concatenate(([0.0], np.cumsum(dy)))
 
     return X_index, Y_index
 
