@@ -16,6 +16,7 @@ pattern_points_x = []
 pattern_points_y = []
 START_TOLERANCE = 1e-2
 MIN_FRAMES_BEFORE_CLOSE_CHECK = 10
+FRAME_INTERVAL_MS = 500
 
 
 # Draw the traced endpoint, the arm chain, and the current endpoint marker.
@@ -97,5 +98,5 @@ def update(frame):
     return line, final_dot
 
 
-ani = animation.FuncAnimation(fig, update, interval=0.50)
+ani = animation.FuncAnimation(fig, update, interval=FRAME_INTERVAL_MS)
 plt.show()
