@@ -1,7 +1,10 @@
 """Animate a chain of rotating arms and save the completed traced pattern."""
 
 import json
+import math
 import pathlib
+import warnings
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -16,6 +19,7 @@ pattern_points_x = []
 pattern_points_y = []
 START_TOLERANCE = 1e-2
 MIN_FRAMES_BEFORE_CLOSE_CHECK = 10
+MAX_FRAMES = 100_000
 
 
 # Draw the traced endpoint, the arm chain, and the current endpoint marker.
@@ -32,6 +36,33 @@ ax.spines["left"].set_position("zero")
 ax.spines["bottom"].set_position("zero")
 ax.spines["right"].set_visible(False)
 ax.spines["top"].set_visible(False)
+
+
+def integer_speed_period():
+    """
+    Return the exact frame period when all active speeds are integer degrees.
+
+    Each integer speed completes its own cycle after 360 / gcd(360, speed)
+    frames. The whole arm chain returns to its starting angular state at the
+    least common multiple of those per-arm periods. Return None when any active
+    speed is fractional, because exact closure may not occur on an integer
+    frame.
+    """
+
+    active_speeds = speeds[:min_length]
+    if not np.all(np.isclose(active_speeds, np.round(active_speeds))):
+        return None
+
+    period = 1
+    for speed in np.round(active_speeds).astype(int):
+        arm_period = 1 if speed == 0 else 360 // math.gcd(360, abs(speed))
+        period = math.lcm(period, arm_period)
+
+    return period
+
+
+EXACT_FRAME_COUNT = integer_speed_period()
+FRAME_LIMIT = EXACT_FRAME_COUNT if EXACT_FRAME_COUNT is not None else MAX_FRAMES
 
 
 def compute_points():
@@ -52,6 +83,23 @@ def compute_points():
     ]
 
     return X_index, Y_index
+
+
+def save_pattern():
+    """Write the traced coordinates and current plot image to the output folder."""
+
+    with open("output/pattern_points.txt", "w") as f:
+        for x, y in zip(pattern_points_x, pattern_points_y):
+            f.write(f"{x}, {y}\n")
+    plt.savefig("output/Ending_Pattern.png")
+
+
+def stop_animation():
+    """Stop the animation event source and close the plot window."""
+
+    if ani.event_source is not None:
+        ani.event_source.stop()
+    plt.close(fig)
 
 
 def update(frame):
@@ -87,15 +135,20 @@ def update(frame):
     else:
         dist_to_start = np.inf
 
-    if dist_to_start <= START_TOLERANCE:
-        with open("output/pattern_points.txt", "w") as f:
-            for x, y in zip(pattern_points_x, pattern_points_y):
-                f.write(f"{x}, {y}\n")
-        plt.savefig("output/Ending_Pattern.png")
-        exit()
+    should_stop_at_limit = len(pattern_points_x) >= FRAME_LIMIT
+
+    if dist_to_start <= START_TOLERANCE or should_stop_at_limit:
+        if EXACT_FRAME_COUNT is None and should_stop_at_limit:
+            warnings.warn(
+                f"Pattern did not close within {MAX_FRAMES:,} frames; "
+                "saving the partial trace and stopping.",
+                RuntimeWarning,
+            )
+        save_pattern()
+        stop_animation()
 
     return line, final_dot
 
 
-ani = animation.FuncAnimation(fig, update, interval=0.50)
+ani = animation.FuncAnimation(fig, update, frames=FRAME_LIMIT, interval=0.50, repeat=False)
 plt.show()

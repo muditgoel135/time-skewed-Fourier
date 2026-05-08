@@ -12,7 +12,7 @@ Each arm in the chain is described by one value from each array in `config.json`
 | `lengths` | Length of the arm                                        |
 | `speeds`  | Degrees the arm rotates per frame; negative is clockwise |
 
-On each animation frame, the script advances every arm by its speed, draws the connected arm chain in orange, and adds the chain endpoint to the black trail. When the endpoint reaches the trail's starting point again, the animation stops and writes the output files.
+On each animation frame, the script advances every arm by its speed, draws the connected arm chain in orange, and adds the chain endpoint to the black trail. When the endpoint reaches the trail's starting point again, the animation stops and writes the output files. To prevent an endless animation, `fourier.py` also stops at a calculated or configured frame limit.
 
 ## Setup
 
@@ -74,6 +74,15 @@ Edit `config.json` to change the animation. Each matching index across the three
 - Larger `lengths` make an arm contribute more strongly to the shape.
 - Positive and negative speeds rotate in opposite directions and can create more complex patterns.
 - Speeds with a shared factor usually close the loop sooner.
+
+
+### Termination behavior
+
+`fourier.py` will not run forever:
+
+- If all active `speeds` are integer degree values, the script calculates the exact angular repeat period using the least common multiple of the per-arm periods and uses that as the animation frame count.
+- If any active `speed` is fractional, exact closure may not happen on an integer frame. In that case, the script falls back to `MAX_FRAMES` (`100,000` frames), saves the partial trace, emits a warning, and stops.
+- The existing tolerance-based close check still stops and saves earlier if the endpoint returns close to its starting point.
 
 ## Output
 
