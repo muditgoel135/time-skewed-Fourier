@@ -16,6 +16,7 @@ pattern_points_x = []
 pattern_points_y = []
 START_TOLERANCE = 1e-2
 MIN_FRAMES_BEFORE_CLOSE_CHECK = 10
+completed = False
 
 
 # Draw the traced endpoint, the arm chain, and the current endpoint marker.
@@ -61,7 +62,7 @@ def update(frame):
     The frame number is supplied by matplotlib but is not needed here.
     """
 
-    global angles
+    global angles, completed
 
     for i in range(min_length):
         angles[i] += speeds[i]
@@ -88,11 +89,15 @@ def update(frame):
         dist_to_start = np.inf
 
     if dist_to_start <= START_TOLERANCE:
+        if completed:
+            return line, final_dot
+
+        completed = True
         with open("output/pattern_points.txt", "w") as f:
             for x, y in zip(pattern_points_x, pattern_points_y):
                 f.write(f"{x}, {y}\n")
         plt.savefig("output/Ending_Pattern.png")
-        exit()
+        ani.event_source.stop()
 
     return line, final_dot
 
