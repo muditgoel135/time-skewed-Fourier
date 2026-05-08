@@ -2,12 +2,29 @@
 
 import json
 import pathlib
+import sys
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+BASE_DIR = pathlib.Path(__file__).resolve().parent
+
+
+def load_config():
+    """Load the arm configuration from the repository directory."""
+
+    config_path = BASE_DIR / "config.json"
+    if not config_path.exists():
+        raise SystemExit(
+            f"Missing configuration file: {config_path}. Run `python random_val.py` first."
+        )
+
+    return json.loads(config_path.read_text(encoding="utf-8"))
+
+
 # Load the arm configuration. Matching indexes across the arrays describe one arm.
-_cfg = json.loads(pathlib.Path("config.json").read_text())
+_cfg = load_config()
 angles = np.array(_cfg["angles"], dtype=float)
 lengths = np.array(_cfg["lengths"], dtype=float)
 speeds = np.array(_cfg["speeds"], dtype=float)
@@ -88,11 +105,13 @@ def update(frame):
         dist_to_start = np.inf
 
     if dist_to_start <= START_TOLERANCE:
-        with open("output/pattern_points.txt", "w") as f:
+        output_dir = BASE_DIR / "output"
+        output_dir.mkdir(exist_ok=True)
+        with (output_dir / "pattern_points.txt").open("w", encoding="utf-8") as f:
             for x, y in zip(pattern_points_x, pattern_points_y):
                 f.write(f"{x}, {y}\n")
-        plt.savefig("output/Ending_Pattern.png")
-        exit()
+        plt.savefig(output_dir / "Ending_Pattern.png")
+        sys.exit()
 
     return line, final_dot
 
