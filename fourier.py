@@ -11,7 +11,21 @@ _cfg = json.loads(pathlib.Path("config.json").read_text())
 angles = np.array(_cfg["angles"], dtype=float)
 lengths = np.array(_cfg["lengths"], dtype=float)
 speeds = np.array(_cfg["speeds"], dtype=float)
-min_length = min(len(angles), len(lengths), len(speeds))
+STRICT_CONFIG = False
+config_lengths = {
+    "angles": len(angles),
+    "lengths": len(lengths),
+    "speeds": len(speeds),
+}
+min_length = min(config_lengths.values())
+if len(set(config_lengths.values())) != 1:
+    message = (
+        "Config arrays have different lengths "
+        f"({config_lengths}); only the first {min_length} entries will be used."
+    )
+    if STRICT_CONFIG:
+        raise SystemExit(message)
+    print(f"Warning: {message}")
 pattern_points_x = []
 pattern_points_y = []
 START_TOLERANCE = 1e-2
