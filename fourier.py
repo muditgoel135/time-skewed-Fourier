@@ -63,6 +63,8 @@ def update(frame):
 
     global angles
 
+    # The configured starting endpoint is seeded before FuncAnimation starts.
+    # Each update stores the next pose after advancing the arm angles.
     for i in range(min_length):
         angles[i] += speeds[i]
         angles[i] = angles[i] % 360
@@ -81,8 +83,8 @@ def update(frame):
     # Exact float equality is rare, so use a tolerance-based distance check.
     if len(pattern_points_x) > MIN_FRAMES_BEFORE_CLOSE_CHECK:
         dist_to_start = np.hypot(
-            pattern_points_x[-1] - pattern_points_x[0],
-            pattern_points_y[-1] - pattern_points_y[0],
+            pattern_points_x[-1] - initial_endpoint_x,
+            pattern_points_y[-1] - initial_endpoint_y,
         )
     else:
         dist_to_start = np.inf
@@ -94,8 +96,17 @@ def update(frame):
         plt.savefig("output/Ending_Pattern.png")
         exit()
 
-    return line, final_dot
+    return trail_line, line, final_dot
 
+
+initial_X_index, initial_Y_index = compute_points()
+initial_endpoint_x = initial_X_index[-1]
+initial_endpoint_y = initial_Y_index[-1]
+pattern_points_x.append(initial_endpoint_x)
+pattern_points_y.append(initial_endpoint_y)
+trail_line.set_data(pattern_points_x, pattern_points_y)
+line.set_data(initial_X_index, initial_Y_index)
+final_dot.set_data([initial_endpoint_x], [initial_endpoint_y])
 
 ani = animation.FuncAnimation(fig, update, interval=0.50)
 plt.show()
