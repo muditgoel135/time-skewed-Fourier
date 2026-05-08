@@ -7,11 +7,75 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # Load the arm configuration. Matching indexes across the arrays describe one arm.
-_cfg = json.loads(pathlib.Path("config.json").read_text())
-angles = np.array(_cfg["angles"], dtype=float)
-lengths = np.array(_cfg["lengths"], dtype=float)
-speeds = np.array(_cfg["speeds"], dtype=float)
+def _load_config(path="config.json"):
+    """Return validated arm arrays from the JSON configuration file."""
+
+    try:
+        cfg = json.loads(pathlib.Path(path).read_text())
+    except FileNotFoundError as exc:
+        raise SystemExit(f"Configuration file not found: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise SystemExit(
+            f"Configuration file {path!r} must contain valid JSON: {exc.msg} "
+            f"at line {exc.lineno}, column {exc.colno}."
+        ) from exc
+
+    if not isinstance(cfg, dict):
+        raise SystemExit(
+            f"Configuration file {path!r} must contain a JSON object with "
+            "'angles', 'lengths', and 'speeds' arrays."
+        )
+
+    required_keys = ("angles", "lengths", "speeds")
+    missing_keys = [key for key in required_keys if key not in cfg]
+    if missing_keys:
+        raise SystemExit(
+            f"Configuration file {path!r} is missing required key(s): "
+            f"{', '.join(missing_keys)}. Add non-empty one-dimensional arrays "
+            "for 'angles', 'lengths', and 'speeds'."
+        )
+
+    arrays = {}
+    for key in required_keys:
+        try:
+            value = np.asarray(cfg[key], dtype=float)
+        except (TypeError, ValueError) as exc:
+            raise SystemExit(
+                f"Configuration value {key!r} must be a one-dimensional "
+                "sequence of numbers."
+            ) from exc
+
+        if value.ndim != 1 or value.size == 0:
+            raise SystemExit(
+                f"Configuration value {key!r} must be a non-empty "
+                "one-dimensional sequence."
+            )
+
+        if not np.isfinite(value).all():
+            raise SystemExit(
+                f"Configuration value {key!r} contains NaN or infinite values; "
+                "replace them with finite numbers."
+            )
+
+        arrays[key] = value
+
+    if (arrays["lengths"] < 0).any():
+        raise SystemExit(
+            "Configuration value 'lengths' must not contain negative values. "
+            "Use a positive length and add 180 degrees to the corresponding "
+            "angle instead."
+        )
+
+    return arrays["angles"], arrays["lengths"], arrays["speeds"]
+
+
+angles, lengths, speeds = _load_config()
 min_length = min(len(angles), len(lengths), len(speeds))
+if min_length == 0:
+    raise SystemExit(
+        "Configuration must define at least one usable arm with matching "
+        "entries in 'angles', 'lengths', and 'speeds'."
+    )
 pattern_points_x = []
 pattern_points_y = []
 START_TOLERANCE = 1e-2
