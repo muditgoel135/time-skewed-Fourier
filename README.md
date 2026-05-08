@@ -12,7 +12,7 @@ Each arm in the chain is described by one value from each array in `config.json`
 | `lengths` | Length of the arm                                        |
 | `speeds`  | Degrees the arm rotates per frame; negative is clockwise |
 
-On each animation frame, the script advances every arm by its speed, draws the connected arm chain in orange, and adds the chain endpoint to the black trail. When the endpoint reaches the trail's starting point again, the animation stops and writes the output files.
+On each animation frame, the script advances every arm by a density-adjusted fraction of its speed, draws the connected arm chain in orange, and adds the chain endpoint to the black trail. The script computes the full cycle length from the vector speeds and increases the number of samples per speed tick when there are more vectors or faster vectors, so complex configurations get more than the old 360 segments plus the closing point. When the computed full cycle has been sampled, the animation stops and writes the output files.
 
 ## Setup
 
@@ -44,13 +44,19 @@ Run the animation with the current configuration:
 python fourier.py
 ```
 
+Generate the completed output files without opening an animation window:
+
+```bash
+python fourier.py --save-only
+```
+
 Generate a new random configuration (or create `config.json` if it does not exist):
 
 ```bash
 python random_val.py
 ```
 
-`random_val.py` overwrites `config.json`, so save any configuration you want to keep before running it.
+`random_val.py` overwrites `config.json`, so save any configuration you want to keep before running it. You can run a different config file without renaming it by passing `--config path/to/config.json` to `fourier.py`.
 
 ## Configuration
 
@@ -74,6 +80,7 @@ Edit `config.json` to change the animation. Each matching index across the three
 - Larger `lengths` make an arm contribute more strongly to the shape.
 - Positive and negative speeds rotate in opposite directions and can create more complex patterns.
 - Speeds with a shared factor usually close the loop sooner.
+- The saved point count is based on the computed cycle length and a sampling density derived from the number of vectors and the fastest absolute speed. More vectors or faster vectors produce more saved points, which helps reduce under-sampling in complex patterns.
 
 ## Output
 
