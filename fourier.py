@@ -16,6 +16,9 @@ pattern_points_x = []
 pattern_points_y = []
 START_TOLERANCE = 1e-2
 MIN_FRAMES_BEFORE_CLOSE_CHECK = 10
+OUTPUT_DIR = pathlib.Path("output")
+POINTS_PATH = OUTPUT_DIR / "pattern_points.txt"
+IMAGE_PATH = OUTPUT_DIR / "Ending_Pattern.png"
 
 
 # Draw the traced endpoint, the arm chain, and the current endpoint marker.
@@ -54,6 +57,44 @@ def compute_points():
     return X_index, Y_index
 
 
+def save_completed_pattern():
+    """Persist the completed pattern using temporary files and atomic replacement."""
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    points_tmp = POINTS_PATH.with_name(f"{POINTS_PATH.name}.tmp")
+    preferred_image_tmp = IMAGE_PATH.with_name(f"{IMAGE_PATH.name}.tmp")
+    fallback_image_tmp = IMAGE_PATH.with_name(f"{IMAGE_PATH.stem}.tmp{IMAGE_PATH.suffix}")
+    completed_tmp_paths = []
+
+    try:
+        with points_tmp.open("w") as f:
+            for x, y in zip(pattern_points_x, pattern_points_y):
+                f.write(f"{x}, {y}\n")
+        completed_tmp_paths.append(points_tmp)
+
+        try:
+            plt.savefig(preferred_image_tmp, format="png")
+            image_tmp = preferred_image_tmp
+        except Exception:
+            preferred_image_tmp.unlink(missing_ok=True)
+            plt.savefig(fallback_image_tmp)
+            image_tmp = fallback_image_tmp
+        completed_tmp_paths.append(image_tmp)
+
+        points_tmp.replace(POINTS_PATH)
+        image_tmp.replace(IMAGE_PATH)
+    except Exception:
+        tmp_paths = {
+            points_tmp,
+            preferred_image_tmp,
+            fallback_image_tmp,
+            *completed_tmp_paths,
+        }
+        for tmp_path in tmp_paths:
+            tmp_path.unlink(missing_ok=True)
+        raise
+
+
 def update(frame):
     """
     Advance the animation by one frame and update the plotted artists.
@@ -88,11 +129,8 @@ def update(frame):
         dist_to_start = np.inf
 
     if dist_to_start <= START_TOLERANCE:
-        with open("output/pattern_points.txt", "w") as f:
-            for x, y in zip(pattern_points_x, pattern_points_y):
-                f.write(f"{x}, {y}\n")
-        plt.savefig("output/Ending_Pattern.png")
-        exit()
+        save_completed_pattern()
+        raise SystemExit
 
     return line, final_dot
 
